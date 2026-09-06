@@ -1,5 +1,9 @@
 # Exp:7 - Expectation–Maximization for the Two-Coin Flipping Experiment
 ## By: Dr N.SARAVANAN - Assistant Professor,AIML,SEC
+#### Name: LAVANYA S
+#### Reg.No: 212223230112
+
+
 This project implements the coin-flipping **Expectation–Maximization (EM)** example demonstrated in the supplied video. It estimates the probability of heads for two coins when the identity of the coin used in each experiment is unknown.
 
 The implementation is intentionally a **mixture-of-coins model**, not a Hidden Markov Model (HMM). One hidden coin generates an entire experiment of ten tosses; the coin does not switch within that experiment.
@@ -133,7 +137,86 @@ theta_a, theta_b, history = fit_two_coins(
 | `max_iter` | Maximum number of EM iterations. |
 | `tol` | Convergence threshold for log-likelihood improvement. |
 
+## Progam: 
+```py
+import numpy as np
+from scipy.stats import binom
+
+# Class to store one experiment
+class Experiment:
+    def __init__(self, tosses):
+        tosses = tosses.replace(" ", "").upper()
+
+        if not tosses or any(c not in "HT" for c in tosses):
+            raise ValueError("Experiment must contain only H and T.")
+
+        self.heads = tosses.count("H")
+        self.tails = tosses.count("T")
+
+
+# EM Algorithm
+def fit_two_coins(experiments,
+                  theta_a=0.60,
+                  theta_b=0.50,
+                  prior_a=0.50,
+                  max_iter=100,
+                  tol=1e-8):
+
+    history = []
+
+    for _ in range(max_iter):
+
+        hA = tA = hB = tB = 0
+
+        # E-Step
+        for exp in experiments:
+
+            pA = prior_a * binom.pmf(exp.heads, exp.heads + exp.tails, theta_a)
+            pB = (1 - prior_a) * binom.pmf(exp.heads, exp.heads + exp.tails, theta_b)
+
+            wA = pA / (pA + pB)
+            wB = 1 - wA
+
+            hA += wA * exp.heads
+            tA += wA * exp.tails
+            hB += wB * exp.heads
+            tB += wB * exp.tails
+
+        # M-Step
+        new_theta_a = hA / (hA + tA)
+        new_theta_b = hB / (hB + tB)
+
+        ll = np.log(new_theta_a) + np.log(new_theta_b)
+        history.append(ll)
+
+        if abs(new_theta_a - theta_a) < tol and abs(new_theta_b - theta_b) < tol:
+            break
+
+        theta_a = new_theta_a
+        theta_b = new_theta_b
+
+    return theta_a, theta_b, history
+
+
+# Input Experiments
+experiments = [
+    Experiment("HTTTHHTHTH"),
+    Experiment("HHHHHTHHHH"),
+    Experiment("HTHHHHHTHH"),
+    Experiment("HTHTTTHHTT"),
+    Experiment("THHHTHHHTH")
+]
+
+theta_a, theta_b, history = fit_two_coins(experiments)
+
+print("Final Theta A:", round(theta_a, 4))
+print("Final Theta B:", round(theta_b, 4))
+print("Iterations:", len(history))
+```
+
 ## Outputs
+<img width="428" height="82" alt="image" src="https://github.com/user-attachments/assets/ef9106da-8ce3-4c18-a22e-4cd01d252b71" />
+
 
 Running the program prints:
 
@@ -143,7 +226,7 @@ Running the program prints:
 4. The final `theta_A` and `theta_B` values after convergence.
 5. The log-likelihood history, used to monitor training progress.
 
-With the data and starting values from the video, the program converges in 13 iterations to approximately:
+With the data and starting values from the video, the program converges in 21 iterations to approximately:
 
 ```text
 Final theta_A (P(heads | Coin A)): 0.7968
